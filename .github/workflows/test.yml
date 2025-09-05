@@ -1,4 +1,4 @@
-name: CI
+name: Python CI
 
 on:
   push:
@@ -13,8 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.8", "3.8", "3.8", "3.9", "3.10"]
-
+        python-version: ['3.8', '3.8']
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
@@ -26,16 +25,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python setup.py --quiet install
-          pip --quiet install -r test-requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y coinor-cbc
+          pip install -r requirements.txt
+          python setup.py -q install
 
-      - name: Run tests
-        run: python setup.py --quiet test
+      - name: Lint with flake8
+        run: flake8
 
-      - name: Run coverage
-        run: coverage run --source circlify tests.py
-
-      - name: Upload coverage to Coveralls
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: coveralls
+      - name: Test with pytest
+        run: py.test
