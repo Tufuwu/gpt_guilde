@@ -1,4 +1,4 @@
-name: Python CI
+name: CI
 
 on:
   push:
@@ -9,18 +9,13 @@ on:
       - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version:
-          - '3.8'
-          - '3.8'
-          - '3.8'
-          - '3.8'
-          - '3.8'
-          - '3.8'
-          - '3.9'
+        python-version: ['3.8', '3.9', '3.10']
+        architecture: [x64, arm64]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -31,10 +26,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: pip install -e .
-
-      - name: Run tests
         run: |
-          cd tests
-          python test_cvss2.py
-          python test_cvss3.py
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run script
+        run: |
+          echo "from Default.settings import *" > settings.py
+          ./generate.py
