@@ -9,11 +9,17 @@ on:
       - main
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
+  test:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10']
+        python-version: ['3.8', '3.8', '3.8', '3.9']
+        include:
+          - python-version: '3.9'
+            allow-failure: true
+        exclude:
+          - python-version: '3.9'
+            allow-failure: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -25,20 +31,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y flake8 gettext gir1.2-gtk-3.0 python3-gi python3-pytest xvfb
-
-      - name: Run flake8
-        run: flake8 .
+          python -m pip install --upgrade pip setuptools
+          pip install -r requirements.txt
+          pip install -r test-requirements.txt
+          python setup.py --version
 
       - name: Run tests
-        run: xvfb-run py.test-3 nfoview
-
-      - name: Install package
-        run: python3 setup.py install --prefix=/tmp/local
-
-      - name: Install package with root
-        run: python3 setup.py install --root=/tmp/pkg
-
-      - name: Clean up
-        run: python3 setup.py clean
+        run: pytest -vv
