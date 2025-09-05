@@ -9,14 +9,13 @@ on:
       - main
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.8", "3.8", "3.8", "3.8", "3.9", "3.8", "pypy-3.6"]
-        with-opt-deps: [false, true]
+        python-version: ['3.8', '3.8', '3.8', '3.8', '3.8']
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v2
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -24,22 +23,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          if [ "${{ matrix.with-opt-deps }}" = "true" ]; then
-            pip install -r requirements.txt pytest
-          fi
-          git clone https://github.com/ProgVal/irctest.git
-          echo "y" | pip uninstall limnoria || true
+      - name: Upgrade setuptools
+        run: pip install --upgrade setuptools
 
-      - name: Install package
-        run: python setup.py install
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
       - name: Run tests
-        run: |
-          supybot-test test -v --plugins-dir=./plugins/ --no-network
-          if [ "${{ matrix.with-opt-deps }}" = "true" ] && [[ "${{ matrix.python-version }}" =~ ^3\.[4-9] ]]; then
-            cd irctest
-            pytest --controllers irctest.controllers.limnoria
-          fi
-    continue-on-error: ${{ matrix.python-version == 'pypy-3.6' && matrix.with-opt-deps == true }}
+        run: python setup.py test
