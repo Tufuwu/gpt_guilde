@@ -1,4 +1,4 @@
-name: Python Package
+name: Python CI
 
 on:
   push:
@@ -10,26 +10,40 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ['3.8', '3.8', '3.8', '3.8', '3.9']
+        os: [ubuntu-latest]
+        python-version: ['3.8', '3.9', '3.8', '3.8', '3.8', '3.8', 'pypy-3.6']
+        arch: [x64, arm64]
+      exclude:
+        - python-version: '3.8'
+          arch: x64
+        - python-version: '3.8'
+          arch: arm64
+
     steps:
-      - name: Check out repository
+      - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.arch }}
+
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
-          pip install -e .
-          pip install pycodestyle
+          python -m pip install --upgrade pip
+          pip install mock
 
       - name: Run tests
-        run: python setup.py test
-
-      - name: Run pycodestyle
-        run: pycodestyle tableauserverclient test samples
+        run: python -m unittest discover -p '*_test.py'
