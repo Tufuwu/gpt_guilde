@@ -1,4 +1,4 @@
-name: Python CI
+name: CI
 
 on:
   push:
@@ -9,38 +9,33 @@ on:
       - main
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.8', '3.8', '3.8']
     steps:
-    - name: Check out code
-      uses: actions/checkout@v2
+      - name: Check out code
+        uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.8'
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Cache pip
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+      - name: Install dependencies
+        run: pip install .[test] codecov
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get -qq update
-        sudo apt-get install -y libeigen3-dev
-        pip install -r requirements.txt
-        pip install pytest pytest-cov pytest-randomly wheel codecov
-        pip install -e .
+      - name: Install additional packages
+        run: sudo apt-get install -y graphviz
 
-    - name: Run tests
-      run: make coverage
+      - name: Run tests
+        run: ./run-tests.py
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage to Codecov
+        if: success()
+        run: codecov
+
+      - name: Clean up pip cache
+        if: success()
+        run: rm -f $HOME/.cache/pip/log/debug.log
