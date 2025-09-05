@@ -1,4 +1,4 @@
-name: CI
+name: Python CI
 
 on:
   push:
@@ -12,58 +12,26 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
-        python-version: ['3.8', '3.8', '3.8', '3.8', '3.9']
-        toxenv:
-          - flake8
-          - integration
-          - py38-django22
-          - py38-django22
-          - py38-django22
-          - py38-django22
-          - py39-django22
-          - py38-django30
-          - py38-django30
-          - py38-django30
-          - py39-django30
-          - py38-django31
-          - py38-django31
-          - py38-django31
-          - py39-django31
-          - py38-djangomain
-          - py38-djangomain
-          - py38-djangomain
-          - py39-djangomain
+        python-version: ['3.8', '3.8', '3.8', '3.8']
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Check out repository
+      uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+    - name: Install dependencies
+      run: |
+        pip install .
+        pip install pytest
 
-      - name: Install dependencies
-        run: pip install tox
-
-      - name: Run tests
-        env:
-          TOXENV: ${{ matrix.toxenv }}
-        run: tox
-
-    allow_failures:
-      matrix:
-        toxenv: 
-          - py38-djangomain
-          - py38-djangomain
-          - py38-djangomain
-          - py39-djangomain
+    - name: Run tests
+      env:
+        JUPYTER_TOKEN: secret
+      run: |
+        jupyter-notebook --config=./tests/resources/jupyter_server_config.py &
+        sleep 5
+        pytest -v
