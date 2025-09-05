@@ -1,4 +1,4 @@
-name: Python CI
+name: CI
 
 on:
   push:
@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.8', '3.8', '3.8']
+        python-version: ["3.8", "3.8", "3.8", "3.8", "3.8", "3.9", "3.10"]
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v2
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -24,12 +24,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: |
-          if [[ ${{ matrix.python-version }} == 2* ]]; then
-            pip install -r py2_requirements.txt
-          else
-            pip install -r py3_requirements.txt
-          fi
+        run: pip install tox-gh-actions coveralls
 
       - name: Run tests
-        run: make test
+        run: tox
+
+      - name: Upload coverage to Coveralls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: coveralls
