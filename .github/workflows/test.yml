@@ -13,46 +13,26 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.8", "3.8", "3.8", "3.8"]
+        include:
+          - python-version: "3.8"
+            toxenv: flake8
+          - python-version: "3.8"
+            toxenv: isort
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
+      - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-
       - name: Install dependencies
         run: |
-          pip install -r mock/requirements.txt
-          pip install pytest-cov
-
+          python -m pip install --upgrade pip
+          pip install tox-gh-actions coveralls
       - name: Run tests
-        run: |
-          PYTHON=python${{ matrix.python-version }} ./mock/run-tests.sh
-
-  copr-build:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.9"
-
-      - name: Install dependencies
-        run: |
-          pip install -r mock/requirements.txt
-          pip install pytest-cov
-
-      - name: Mock RPM in Copr
-        run: |
-          PACKAGE=mock .travis/copr-build
-
-      - name: Mock-core-configs RPM in Copr
-        run: |
-          PACKAGE=mock-core-configs .travis/copr-build
+        run: tox
+      - name: Upload coverage to Coveralls
+        if: success() && matrix.python-version == '3.8' && matrix.toxenv == ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: coveralls
