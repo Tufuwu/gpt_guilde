@@ -9,39 +9,23 @@ on:
       - main
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.8", "3.8", "3.8", "3.8", "3.8"]
+        python-version: ["3.8", "3.8", "3.8", "3.9"]
+
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v2
+    - name: Check out repository
+      uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get -qq update
-          sudo apt-get install -y graphviz python-tk python-matplotlib
-          pip install Sphinx recommonmark pep8 coverage coveralls numpy
+    - name: Install dependencies
+      run: pip install tox-gh-actions
 
-      - name: Run tests
-        run: |
-          python -Wall setup.py try
-          python setup.py install
-          python -Wall setup.py test
-          COVERAGE=1 coverage run test/runtest.py
-          python run.py --doctest
-          python run.py --html
-
-      - name: Check code style
-        run: pep8 --exclude=asizeof.py,metadata.py,bottle*.py --max-line-length=80 pympler
-
-      - name: Upload coverage to Coveralls
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: coveralls
+    - name: Run tests
+      run: tox
