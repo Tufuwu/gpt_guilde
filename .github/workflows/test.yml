@@ -9,30 +9,42 @@ on:
       - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        python-version: ['3.8', '3.8', '3.8', '3.x']
+        python-version: ['3.8', '3.8']
+
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
+    - name: Set up JDK 8
+      uses: actions/setup-java@v2
+      with:
+        java-version: '8'
+        distribution: 'oracle'
 
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+    - name: Install dependencies
+      run: bash scripts/install.sh
 
-      - name: Run tests
-        run: make test
+    - name: Run tests
+      run: bash scripts/run_tests.sh
+
+    - name: SonarCloud Scan
+      if: github.event_name == 'push' && github.event.pull_request == null
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: sonar-scanner
+
+    - name: Cache SonarCloud
+      uses: actions/cache@v3
+      with:
+        path: ${{ runner.os }}/.sonar/cache
+        key: ${{ runner.os }}-sonar-cache
