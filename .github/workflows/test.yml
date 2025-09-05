@@ -9,13 +9,13 @@ on:
       - main
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.8", "3.8"]
+        python-version: ['3.8', '3.8', '3.8']
     steps:
-      - name: Check out repository
+      - name: Check out code
         uses: actions/checkout@v2
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -23,25 +23,31 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache pip
-        uses: actions/cache@v3
+      - name: Install dependencies
+        run: pip install tox-gh-actions
+
+      - name: Run tests
+        run: tox
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          python-version: '3.8'
 
       - name: Install dependencies
-        run: |
-          pip install pyusb coverage coveralls pyserial PyYAML tqdm
+        run: pip install tox-gh-actions
 
-      - name: Build
-        run: python setup.py build
+      - name: Run coverage
+        run: tox
 
-      - name: Test with coverage
-        run: coverage run --source=stcgal setup.py test
-
-      - name: Coveralls
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: coveralls
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
