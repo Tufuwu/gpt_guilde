@@ -1,4 +1,4 @@
-name: Python CI
+name: CI
 
 on:
   push:
@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.8']
+        python-version: ['3.8']
     steps:
-      - name: Check out repository
+      - name: Check out code
         uses: actions/checkout@v2
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -23,16 +23,20 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Install dependencies
-        run: CFLAGS="-O0" pip install . --upgrade
+        run: pip install -r requirements/ci.txt
 
       - name: Run tests
-        run: ./runtests.sh
+        run: coverage run manage.py test
+
+      - name: Generate coverage report
+        run: coverage report
+
+      - name: Generate coverage XML
+        run: coverage xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          file: coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
