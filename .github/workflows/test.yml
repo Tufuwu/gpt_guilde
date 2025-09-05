@@ -1,4 +1,4 @@
-name: Python package
+name: Python CI
 
 on:
   push:
@@ -9,45 +9,41 @@ on:
       - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        python-version: ['3.8', '3.8', '3.8']
+        python-version: ["3.8", "3.8"]
+
     steps:
-      - name: Check out code
-        uses: actions/checkout@v2
+    - name: Check out repository
+      uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: pip install tox-gh-actions
+    - name: Cache pip
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
 
-      - name: Run tests
-        run: tox
+    - name: Install dependencies
+      run: |
+        pip install --upgrade black
+        pip install --upgrade flake8
+        pip install --upgrade -r requirements.txt
 
-  coverage:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
+    - name: Run flake8
+      run: flake8 --statistics --count
 
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.8'
+    - name: Run black
+      run: black --check --diff --target-version py38 .
 
-      - name: Install dependencies
-        run: pip install tox-gh-actions
-
-      - name: Run coverage
-        run: tox
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Run dummy script
+      run: python random_street_view.py --help
