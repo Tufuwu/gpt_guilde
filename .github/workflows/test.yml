@@ -7,36 +7,74 @@ on:
   pull_request:
     branches:
       - main
+  tags:
+    - '*'
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  build-linux:
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         python-version: ['3.8']
+        arch: [x64, arm64]
     steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
+      - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-
       - name: Install dependencies
-        run: pip install -r requirements/ci.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade pip pyinstaller wheel
+          pip install -r requirements.txt .
+      - name: Run script
+        run: |
+          cd pyinstaller && ./bundle.sh
 
-      - name: Run tests
-        run: coverage run manage.py test
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Python 3.8.4
+        run: |
+          brew install python@3.8
+          python3.8 -m pip install --upgrade pip
+      - name: Install dependencies
+        run: |
+          pip3 install --upgrade pip pyinstaller wheel
+          pip3 install -r requirements.txt .
+      - name: Run script
+        run: |
+          cd pyinstaller && ./bundle.sh
 
-      - name: Generate coverage report
-        run: coverage report
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8.0
+        run: |
+          choco install python --version 3.8.0
+          python -m pip install --upgrade pip
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip pyinstaller wheel
+          pip install -r requirements.txt .
+      - name: Run script
+        run: |
+          cd pyinstaller && ./bundle.sh
 
-      - name: Generate coverage XML
-        run: coverage xml
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
+  deploy:
+    runs-on: ubuntu-22.04
+    needs: [build-linux, build-macos, build-windows]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
         with:
-          file: coverage.xml
-          token: ${{ secrets.CODECOV_TOKEN }}
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: deploy/*
+          asset_name: ${{ github.event.release.tag_name }}-assets
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
