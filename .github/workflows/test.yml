@@ -13,9 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.8', '3.8', '3.8']
+        python-version: ["3.8", "3.8", "3.8", "3.9", "3.8"]
+        include:
+          - python-version: "3.8"
+            allow_failure: true
     steps:
-      - name: Check out repository
+      - name: Check out code
         uses: actions/checkout@v2
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -25,8 +28,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pycryptodome
-          pip install requests
+          python -m pip install --upgrade pip
+          pip install pipenv
+          pipenv install --dev
+
+      - name: Run lint
+        run: pipenv run lint
 
       - name: Run tests
-        run: python test.py
+        run: pipenv run test
