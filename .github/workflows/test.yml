@@ -1,4 +1,4 @@
-name: Python CI
+name: CI
 
 on:
   push:
@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.8', '3.8', '3.8', '3.8', 'pypy-3.6']
+        python-version: ['3.8', '3.8', '3.8']
     steps:
-      - name: Check out repository
+      - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -24,7 +24,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: python setup.py develop
+        run: |
+          python3 setup.py install
+          sudo apt-get -y update
+          pip install pytest-cov
+          pip install .[ja]
 
       - name: Run tests
-        run: python -m pytest
+        run: |
+          python3 -m pytest
+          ./test.sh
