@@ -1,4 +1,4 @@
-name: CI
+name: Python CI
 
 on:
   push:
@@ -13,25 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.8", "3.8", "3.9", "3.10"]
-        toxenv:
-          - flake8
-          - check_rst
-          - coverage
-          - py38-django111
-          - py38-django22
-          - py38-django111
-          - py38-django22
-          - py39-django22
-          - py39-django32
-          - py310-django32
-          - py310-django40
-          - py310-django41
+        python-version: ['3.8', '3.8', '3.8', '3.9']
+        django-version: ['22', '30', '31', '32']
+        arch: [x64, arm64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
@@ -43,28 +32,5 @@ jobs:
 
       - name: Run tests
         env:
-          TOX_ENV: ${{ matrix.toxenv }}
-        run: tox -e $TOX_ENV
-
-      - name: Upload tox logs
-        if: failure()
-        run: cat tox_log/*.log
-
-  cache:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Cache tox
-        uses: actions/cache@v3
-        with:
-          path: .tox
-          key: ${{ runner.os }}-tox-${{ hashFiles('**/tox.ini') }}
-          restore-keys: |
-            ${{ runner.os }}-tox-
+          TOXENV: py${{ matrix.python-version }}-django${{ matrix.django-version }}
+        run: tox
