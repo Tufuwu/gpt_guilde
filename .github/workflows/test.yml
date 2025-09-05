@@ -1,4 +1,4 @@
-name: Python package
+name: CI
 
 on:
   push:
@@ -13,21 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10', '3.9', '3.8', '3.8', '3.8']
-        include:
-          - python-version: '3.10'
-            TOXENV: py310
-          - python-version: '3.9'
-            TOXENV: py39
-          - python-version: '3.8'
-            TOXENV: py38
-          - python-version: '3.8'
-            TOXENV: py38
-          - python-version: '3.8'
-            TOXENV: py38
-
+        python-version: ['3.8', '3.8', '3.8', '3.8']
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v2
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -37,17 +25,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip setuptools tox virtualenv
-          pip install -e .
-          pip install pytest-cov codecov -r tests/requirements.txt
+          python -m pip install --upgrade pip setuptools
+          ./setup.py develop
+          pip install -e '.[tests]'
 
-      - name: Run tests with tox
-        run: tox
+      - name: Lint with pylama
+        run: pylama
 
-      - name: Run coverage and upload to Codecov
-        if: success()
-        run: |
-          pytest tests/ example/ --cov=./
-          codecov
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Test with pytest
+        run: py.test
