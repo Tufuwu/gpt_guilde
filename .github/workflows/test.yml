@@ -1,4 +1,4 @@
-name: CI
+name: Python CI
 
 on:
   push:
@@ -13,10 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.8", "3.8", "3.9"]
-        include:
-          - python-version: "3.9"
-            toxenv: mypy
+        python-version: 
+          - '3.8'
+          - '3.8'
+          - '3.8'
+          - '3.8'
+          - '3.8'
+          - '3.9'
+          - 'pypy-3.8'
+          - 'pypy-3.8'
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -26,16 +31,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Cache Hypothesis directory
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.HYPOTHESIS_STORAGE_DIRECTORY }}
+          key: ${{ runner.os }}-hypothesis-${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-hypothesis-
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install tox-gh-actions codecov
+          pip install --upgrade --upgrade-strategy only-if-needed pytest pytest-catchlog
+          pip install .
 
       - name: Run tests
-        run: tox -v
-
-      - name: Upload coverage to Codecov
-        if: success()
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+        run: py.test
+        env:
+          HYPOTHESIS_STORAGE_DIRECTORY: ${{ env.HYPOTHESIS_STORAGE_DIRECTORY }}
