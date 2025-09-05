@@ -1,4 +1,4 @@
-name: Python package
+name: CI
 
 on:
   push:
@@ -9,34 +9,20 @@ on:
       - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.8', '3.8', '3.8']
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.8'
 
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-          bash miniconda.sh -b -p $HOME/miniconda
-          echo "$HOME/miniconda/bin" >> $GITHUB_PATH
-          conda config --set always_yes yes --set changeps1 no
-          conda update -q conda
-          conda create -q -n test python=${{ matrix.python-version }}
-          source activate test
-          conda install altair matplotlib numba numpy pandas pyteomics pytest -c defaults -c bioconda -c conda-forge
-          python setup.py install
+        run: make install-deps
 
-      - name: Run tests
-        run: |
-          source activate test
-          pytest
+      - name: Run make
+        run: make
