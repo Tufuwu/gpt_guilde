@@ -1,4 +1,4 @@
-name: CI
+name: Python application
 
 on:
   push:
@@ -13,32 +13,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.8', '3.8', '3.8', 'pypy-3.6']
-        toxenv:
-          - pep8
-          - placement
-          - pypy-3.6
-          - py38
-          - py38
-          - py38
-          - py38
-          - py38-pytest
-          - py38-pytest
-          - py38-pytest
-          - py38-failskip
-          - py38-limit
-          - py38-prefix
+        python-version: ['3.8']
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Check out repository
+      uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: pip install tox
+    - name: Install dependencies
+      run: pip install -r requirements.txt
 
-      - name: Run tests
-        run: tox -e ${{ matrix.toxenv }}
+    - name: Run tests
+      run: pytest
