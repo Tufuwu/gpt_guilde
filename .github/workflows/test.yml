@@ -9,32 +9,38 @@ on:
       - main
 
 jobs:
-  flake8:
-    runs-on: ubuntu-22.04
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.8', '3.8', '3.9']
+        toxenv:
+          - py38
+          - cov
+          - py38
+          - py38
+          - py39
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: pip install flake8
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox coveralls
 
-      - name: Run Flake8
-        run: flake8
+      - name: Run tests
+        run: tox
+        env:
+          TOXENV: ${{ matrix.toxenv }}
 
-  dockerfile_lint:
-    runs-on: ubuntu-22.04
-    services:
-      docker:
-        image: docker:19.03.12
-        options: --privileged
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Run Hadolint
-        run: docker run --rm -i hadolint/hadolint:v1.19.0-45-gef91156-alpine < Dockerfile
+      - name: Upload coverage to Coveralls
+        if: matrix.toxenv == 'cov'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: coveralls
